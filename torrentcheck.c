@@ -71,6 +71,8 @@ typedef struct {
 	int errorsFound;
 } fileRecord;
 
+int beStepOver(BYTE* benstr,int benstrLen,int benstrOffset);
+
 // Extracts the integer
 // Returns the new offset into the input,
 // or -1 if unable to parse the input
@@ -110,7 +112,6 @@ int beParseInteger(BYTE* benstr,int benstrLen,int benstrOffset,INT64* longOut) {
 int beParseString(BYTE* benstr,int benstrLen,int benstrOffset,BYTE** stringBegin,int* stringLen) {
 	int i;
 	BYTE b;
-	BYTE* foundString;
 	int foundLen = 0;
 	for(i=benstrOffset;i<benstrLen;i++) {
 		b = benstr[i];
@@ -309,8 +310,6 @@ int main(int argc,char* argv[]) {
 	unsigned char sha1hash[SHA1_LEN];
 	int torrentInfo = -1;
 	int ofs = -1;
-	int ofs2 = -1;
-	int torrentPieceLen = -1;
 	int lastFile = 0;
 	int torrentFiles = -1;
 	int thisFileOffset = -1;
@@ -325,7 +324,6 @@ int main(int argc,char* argv[]) {
 	BYTE* pieceList = NULL;
 	int pieceListLen = -1;
 	BYTE* pieceBuf = NULL;
-	int bytesInBuf = 0;
 	int bytesToRead = 0;
 	BYTE* rootName = NULL;
 	int rootNameLen = -1;
@@ -346,17 +344,15 @@ int main(int argc,char* argv[]) {
 	int piecesDone = 0;
 	int errorsFound = 0;
 	int errorsFoundThisFile = 0;
-	int piecesChecked = 0;
 	int firstFileThisPiece = 0;
 	int currentFile = 0;
 	fileRecord* fileRecordList = NULL;
-	int maxFileRecords = 16;
 	int showProgressCount = 1;
 	int showPieceDetail = 0;
 	char useCommaDot = 0;
 	int thisPieceBad = 0;
 	int showProgressChars = 0;
-	char progressBuf[48];
+	char progressBuf[100];
 	char p64Buf1[32];
 	char p64Buf2[32];
 	SHA_CTX sha1ctx;
@@ -464,7 +460,7 @@ int main(int argc,char* argv[]) {
 		return 2;
 	}
 	bytesRead = fread(torrent,1,torrentLen,fp);
-	if (fp != NULL) fclose(fp); fp = NULL;
+	if (fp != NULL) { fclose(fp); fp = NULL; }
 	i = beStepOver(torrent,torrentLen,0);
 	if (i != torrentLen) {
 		printf("Unable to parse torrent metadata file %s\n",torrentFile);
@@ -560,12 +556,16 @@ int main(int argc,char* argv[]) {
 					filePathOfs++;
 				}	
 				while (fileNameLen + filePathOfs + contentPathLen + rootNameLen + 16 >= filePathMax) {
+					char *tmp;
 					filePathMax *= 2;
-					filePath = realloc(filePath,filePathMax);
-					if (filePath == NULL) {
+					tmp = realloc(filePath,filePathMax);
+					if (tmp == NULL) {
+						free(filePath);
+						filePath = NULL;
 						printf("Unable to realloc %i bytes for file path\n",filePathMax);
 						return 2;
 					}
+					filePath = tmp;
 				}
 				memcpy(filePath+filePathOfs,fileName,fileNameLen);
 				filePathOfs += fileNameLen;
@@ -592,12 +592,16 @@ int main(int argc,char* argv[]) {
         iconv_close(convDescriptor);
 
         if(filePathUTF8Len >= filePathMax) {
+          char *tmp;
           filePathMax *= 2;
-          filePath = realloc(filePath,filePathMax);
-          if (filePath == NULL) {
+          tmp = realloc(filePath,filePathMax);
+          if (tmp == NULL) {
+            free(filePath);
+            filePath = NULL;
             printf("Unable to realloc %i bytes for file path\n",filePathMax);
             return 2;
           }
+          filePath = tmp;
         }
         memcpy(filePath, filePathUTF8, filePathUTF8Len);
         filePath[filePathUTF8Len] = '\0';
@@ -842,7 +846,7 @@ int main(int argc,char* argv[]) {
 					}
 				}
 			}
-			if (fp != NULL) fclose(fp); fp = NULL;
+			if (fp != NULL) { fclose(fp); fp = NULL; }
 			errorsFoundThisFile = 0;
 			currentFile ++;
 		}
@@ -853,7 +857,7 @@ int main(int argc,char* argv[]) {
                                         print64(fileRecordList[i].numBytes,p64Buf1,useCommaDot),fileRecordList[i].filePath);
 		}
 
-		if (fp != NULL) fclose(fp); fp = NULL;
+		if (fp != NULL) { fclose(fp); fp = NULL; }
 		backspaceProgressLine(&showProgressChars);
 		printf("Total files %i, total bytes %s, total errors %i, %s\n",currentFile,print64(totalBytesDone,p64Buf1,useCommaDot),errorsFound, (errorsFound == 0)?"torrent is good":"torrent has errors");
 		if (errorsFound > 0) {
@@ -934,7 +938,7 @@ int main(int argc,char* argv[]) {
 			}
 						
 		}
-		if (fp != NULL) fclose(fp); fp = NULL;
+		if (fp != NULL) { fclose(fp); fp = NULL; }
 		
 		backspaceProgressLine(&showProgressChars);
 		printf("Total bytes %s, total errors %i, %s\n",print64(totalBytesDone,p64Buf1,useCommaDot),errorsFound, (errorsFound == 0)?"torrent is good":"torrent has errors");
