@@ -434,6 +434,7 @@ main(int argc, char *argv[])
 	BYTE *torrent;
 	int torrentLen;
 	int i;
+	int pieceHash;
 	INT64 bytesRead = -1;
 	unsigned char sha1hash[SHA1_LEN];
 	int torrentInfo = -1;
@@ -1011,7 +1012,7 @@ main(int argc, char *argv[])
 					}
 
 					totalBytesDone += bytesRead;
-					i = piecesDone * SHA1_LEN;
+					pieceHash = piecesDone * SHA1_LEN;
 
 					if ((fp == NULL) || (readLen != bytesToRead)) {
 						errorsFound ++;
@@ -1021,7 +1022,7 @@ main(int argc, char *argv[])
 						for (i = firstFileThisPiece; i <= currentFile; i++) {
 							fileRecordList[i].errorsFound = errorsFoundThisFile;
 						}
-					} else if (memcmp(pieceList + i, sha1hash, SHA1_LEN) != 0) {
+					} else if (memcmp(pieceList + pieceHash, sha1hash, SHA1_LEN) != 0) {
 						errorsFound ++;
 						errorsFoundThisFile ++;
 						thisPieceBad = 1;
@@ -1042,11 +1043,11 @@ main(int argc, char *argv[])
 								(int)sha1hash[12], (int)sha1hash[13], (int)sha1hash[14], (int)sha1hash[15],
 								(int)sha1hash[16], (int)sha1hash[17], (int)sha1hash[18], (int)sha1hash[19]);
 							printf("piece %i expected SHA1 %02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x\n", piecesDone,
-								(int)pieceList[i + 0], (int)pieceList[i + 1], (int)pieceList[i + 2], (int)pieceList[i + 3],
-								(int)pieceList[i + 4], (int)pieceList[i + 5], (int)pieceList[i + 6], (int)pieceList[i + 7],
-								(int)pieceList[i + 8], (int)pieceList[i + 9], (int)pieceList[i + 10], (int)pieceList[i + 11],
-								(int)pieceList[i + 12], (int)pieceList[i + 13], (int)pieceList[i + 14], (int)pieceList[i + 15],
-								(int)pieceList[i + 16], (int)pieceList[i + 17], (int)pieceList[i + 18], (int)pieceList[i + 19]);
+								(int)pieceList[pieceHash + 0], (int)pieceList[pieceHash + 1], (int)pieceList[pieceHash + 2], (int)pieceList[pieceHash + 3],
+								(int)pieceList[pieceHash + 4], (int)pieceList[pieceHash + 5], (int)pieceList[pieceHash + 6], (int)pieceList[pieceHash + 7],
+								(int)pieceList[pieceHash + 8], (int)pieceList[pieceHash + 9], (int)pieceList[pieceHash + 10], (int)pieceList[pieceHash + 11],
+								(int)pieceList[pieceHash + 12], (int)pieceList[pieceHash + 13], (int)pieceList[pieceHash + 14], (int)pieceList[pieceHash + 15],
+								(int)pieceList[pieceHash + 16], (int)pieceList[pieceHash + 17], (int)pieceList[pieceHash + 18], (int)pieceList[pieceHash + 19]);
 						}
 
 						printf("piece %i is files %i-%i, %s bytes, %s total bytes, %i error%s\n", piecesDone, firstFileThisPiece + 1, currentFile + 1, print64(bytesRead, p64Buf1, useCommaDot), print64(totalBytesDone, p64Buf2, useCommaDot), errorsFound, ((errorsFound == 1) ? "" : "s"));
